@@ -1,0 +1,51 @@
+diff --git a/device.mk b/device.mk
+index 5b35700..a7ddc40 100755
+--- a/device.mk
++++ b/device.mk
+@@ -1326,3 +1326,15 @@ $(call inherit-product, device/mediatek/vendor/common/device.mk)
+ 
+ #inherit prebuilt
+ $(call inherit-product-if-exists, vendor/mediatek/mt8167/device-vendor.mk)
++
++#muyf added 
++#PRODUCT_PACKAGES += \
++#        my_demo.hardware.led@1.0-service \
++#        my_demo.hardware.led@1.0.so \
++#        libled_jni \
++#        LedControl
++        
++PRODUCT_PACKAGES += \
++        my_demo.hardware.led@1.0-service \
++        my_demo.hardware.led@1.0.so 
++ 
+\ No newline at end of file
+diff --git a/manifest.xml b/manifest.xml
+index 349ac79..4c2bd2c 100755
+--- a/manifest.xml
++++ b/manifest.xml
+@@ -231,4 +231,13 @@
+             <instance>default</instance>
+         </interface>
+     </hal>
++    <hal format="hidl">
++        <name>my_demo.hardware.led</name>
++        <transport>hwbinder</transport>
++        <version>1.0</version>
++        <interface>
++            <name>ILed</name>
++            <instance>default</instance>
++        </interface>
++    </hal>
+ </manifest>
+diff --git a/sepolicy/basic/system_server.te b/sepolicy/basic/system_server.te
+index a63efaa..65c6791 100755
+--- a/sepolicy/basic/system_server.te
++++ b/sepolicy/basic/system_server.te
+@@ -10,4 +10,5 @@ allow system_server led_device:chr_file { open read write ioctl getattr };
+ allow system_server tsensor_device:chr_file { open read write ioctl getattr };
+ allow system_server sys_mic_file:file rw_file_perms;
+ allow system_server sys_rgbsensor_file:file rw_file_perms;
+-allow system_server sys_walnutbrightness_file:file rw_file_perms;
+\ No newline at end of file
++allow system_server sys_walnutbrightness_file:file rw_file_perms;
++

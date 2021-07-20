@@ -1,0 +1,140 @@
+From 76714ca273d590f3dec61732ce2479bcb630ff2e Mon Sep 17 00:00:00 2001
+From: "yanfei.mu" <yanfei.mu@tcl.com>
+Date: Tue, 20 Jul 2021 14:53:46 +0800
+Subject: [PATCH] hidl led sepolicy
+
+Change-Id: I8b9a4eb135f55c13ae2a8c471569d430e16c954c
+---
+ non_plat/attributes         |  6 ++++++
+ non_plat/file_contexts      |  3 +++
+ non_plat/hal_led_default.te | 24 ++++++++++++++++++++++++
+ non_plat/hwservice.te       |  3 +++
+ non_plat/hwservice_contexts |  4 ++++
+ non_plat/platform_app.te    |  6 ++++++
+ non_plat/system_server.te   |  4 ++++
+ 7 files changed, 50 insertions(+)
+ mode change 100644 => 100755 non_plat/attributes
+ create mode 100755 non_plat/hal_led_default.te
+ mode change 100644 => 100755 non_plat/hwservice.te
+ mode change 100644 => 100755 non_plat/hwservice_contexts
+ mode change 100644 => 100755 non_plat/platform_app.te
+ mode change 100644 => 100755 non_plat/system_server.te
+
+diff --git a/non_plat/attributes b/non_plat/attributes
+old mode 100644
+new mode 100755
+index 116c81a..988671c
+--- a/non_plat/attributes
++++ b/non_plat/attributes
+@@ -71,3 +71,9 @@ attribute hal_omadm_server;
+ attribute hal_nwk_opt;
+ attribute hal_nwk_opt_client;
+ attribute hal_nwk_opt_server;
++
++#muyf 
++attribute hal_led;
++attribute hal_led_client;
++attribute hal_led_server;
++
+diff --git a/non_plat/file_contexts b/non_plat/file_contexts
+index e019289..e196877 100755
+--- a/non_plat/file_contexts
++++ b/non_plat/file_contexts
+@@ -187,4 +187,7 @@
+ 
+ /sdcard/log(/.*)? u:object_r:sys_lenovo_log_file:s0
+ 
++#muyf 
++/vendor/bin/hw/my_demo\.hardware\.led@1\.0-service  u:object_r:hal_led_default_exec:s0
++
+ 
+diff --git a/non_plat/hal_led_default.te b/non_plat/hal_led_default.te
+new file mode 100755
+index 0000000..32e1ddf
+--- /dev/null
++++ b/non_plat/hal_led_default.te
+@@ -0,0 +1,24 @@
++type hal_led_default, domain, mlstrustedsubject;
++type hal_led_default_exec, exec_type, vendor_file_type, file_type;
++
++init_daemon_domain(hal_led_default)
++hal_server_domain(hal_led_default, hal_led)
++
++# HwBinder IPC from client to server, and callbacks
++binder_call(hal_led_client, hal_led_server)
++binder_call(hal_led_server, hal_led_client)
++
++add_hwservice(hal_led_server, hal_led_hwservice)
++allow hal_led_client hal_led_hwservice:hwservice_manager find;
++
++##########################################################
++# allow HAL module to open/read/write/ioctl
++# /sys/devices/platform/leds (/sys/class/leds)
++##########################################################
++allow hal_led sysfs_leds:lnk_file read;
++allow hal_led sysfs_leds:file rw_file_perms;
++allow hal_led sysfs_leds:dir r_dir_perms;
++
++allow hal_led_default sysfs:file rw_file_perms;
++
++allow  hal_led_default  led_device:chr_file { open write read ioctl};
+diff --git a/non_plat/hwservice.te b/non_plat/hwservice.te
+old mode 100644
+new mode 100755
+index ec3b121..589368f
+--- a/non_plat/hwservice.te
++++ b/non_plat/hwservice.te
+@@ -38,3 +38,6 @@ type hal_teeregistry_hwservice, hwservice_manager_type;
+ # Purpose : Add for HIDL service
+ type mtk_mdm_hidl_server, hwservice_manager_type;
+ 
++#muyf 
++type hal_led_hwservice, hwservice_manager_type;
++
+diff --git a/non_plat/hwservice_contexts b/non_plat/hwservice_contexts
+old mode 100644
+new mode 100755
+index 53017ca..6b35bce
+--- a/non_plat/hwservice_contexts
++++ b/non_plat/hwservice_contexts
+@@ -98,3 +98,7 @@ vendor.trustonic.tee::ITee                        u:object_r:hal_tee_hwservice:s
+ vendor.trustonic.tee.tui::ITui                    u:object_r:hal_tee_hwservice:s0
+ vendor.trustonic.teeregistry::ITeeRegistry        u:object_r:hal_teeregistry_hwservice:s0
+ 
++#muyf  added 
++
++my_demo.hardware.led::ILed      u:object_r:hal_led_hwservice:s0
++
+diff --git a/non_plat/platform_app.te b/non_plat/platform_app.te
+old mode 100644
+new mode 100755
+index 532be5b..16cc531
+--- a/non_plat/platform_app.te
++++ b/non_plat/platform_app.te
+@@ -182,3 +182,9 @@ get_prop(platform_app, mtk_cta_support_prop);
+ # Purpose: Allow platform app to access mdlactl_device and vpu_device
+ allow platform_app mdla_device:chr_file { rw_file_perms };
+ allow platform_app vpu_device:chr_file { rw_file_perms };
++
++#muyf added 20210719
++
++allow platform_app hal_led_hwservice:hwservice_manager { find };
++allow platform_app hal_led_default:binder { call };
++
+diff --git a/non_plat/system_server.te b/non_plat/system_server.te
+old mode 100644
+new mode 100755
+index 146c7ba..dd406b6
+--- a/non_plat/system_server.te
++++ b/non_plat/system_server.te
+@@ -224,3 +224,7 @@ get_prop(system_server, mtk_heavy_loading_prop)
+ # Operation : nwk_opt hal
+ # Purpose : nwk_opt hal permission
+ hal_client_domain(system_server, hal_nwk_opt)
++
++#muyf 
++hal_client_domain(system_server, hal_led)
++
+-- 
+2.29.0
+
